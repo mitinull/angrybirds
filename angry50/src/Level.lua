@@ -6,10 +6,9 @@
     cogden@cs50.harvard.edu
 ]]
 
-Level = Class{}
+Level = Class {}
 
 function Level:init()
-    
     -- create a new "world" (where physics take place), with no x gravity
     -- and 30 units of Y gravity (for downward force)
     self.world = love.physics.newWorld(0, 300)
@@ -27,11 +26,10 @@ function Level:init()
 
         -- if we collided between both the player and an obstacle...
         if types['Obstacle'] and types['Player'] then
-
             -- grab the body that belongs to the player
             local playerFixture = a:getUserData() == 'Player' and a or b
             local obstacleFixture = a:getUserData() == 'Obstacle' and a or b
-            
+
             -- destroy the obstacle if player's combined X/Y velocity is high enough
             local velX, velY = playerFixture:getBody():getLinearVelocity()
             local sumVel = math.abs(velX) + math.abs(velY)
@@ -43,7 +41,6 @@ function Level:init()
 
         -- if we collided between an obstacle and an alien, as by debris falling...
         if types['Obstacle'] and types['Alien'] then
-
             -- grab the body that belongs to the player
             local obstacleFixture = a:getUserData() == 'Obstacle' and a or b
             local alienFixture = a:getUserData() == 'Alien' and a or b
@@ -59,7 +56,6 @@ function Level:init()
 
         -- if we collided between the player and the alien...
         if types['Player'] and types['Alien'] then
-
             -- grab the bodies that belong to the player and alien
             local playerFixture = a:getUserData() == 'Player' and a or b
             local alienFixture = a:getUserData() == 'Alien' and a or b
@@ -84,7 +80,7 @@ function Level:init()
     -- implementing any functionality with them in this demo; use-case specific
     -- http://www.iforce2d.net/b2dtut/collision-anatomy
     function endContact(a, b, coll)
-        
+
     end
 
     function preSolve(a, b, coll)
@@ -111,7 +107,8 @@ function Level:init()
     self.edgeShape = love.physics.newEdgeShape(0, 0, VIRTUAL_WIDTH * 3, 0)
 
     -- spawn an alien to try and destroy
-    table.insert(self.aliens, Alien(self.world, 'square', VIRTUAL_WIDTH - 80, VIRTUAL_HEIGHT - TILE_SIZE - ALIEN_SIZE / 2, 'Alien'))
+    table.insert(self.aliens,
+        Alien(self.world, 'square', VIRTUAL_WIDTH - 80, VIRTUAL_HEIGHT - TILE_SIZE - ALIEN_SIZE / 2, 'Alien'))
 
     -- spawn a few obstacles
     table.insert(self.obstacles, Obstacle(self.world, 'vertical',
@@ -132,7 +129,6 @@ function Level:init()
 end
 
 function Level:update(dt)
-    
     -- update launch marker, which shows trajectory
     self.launchMarker:update(dt)
 
@@ -141,7 +137,7 @@ function Level:update(dt)
 
     -- destroy all bodies we calculated to destroy during the update call
     for k, body in pairs(self.destroyedBodies) do
-        if not body:isDestroyed() then 
+        if not body:isDestroyed() then
             body:destroy()
         end
     end
@@ -170,14 +166,33 @@ function Level:update(dt)
         end
     end
 
+    -- remove all destroyed players from level
+    for i = #self.launchMarker.aliens, 1, -1 do
+        if self.launchMarker.aliens[i].body:isDestroyed() then
+            table.remove(self.launchMarker.aliens, i)
+            gSounds['kill']:stop()
+            gSounds['kill']:play()
+        end
+    end
+
     -- replace launch marker if original alien stopped moving
     if self.launchMarker.launched then
-        local xPos, yPos = self.launchMarker.alien.body:getPosition()
-        local xVel, yVel = self.launchMarker.alien.body:getLinearVelocity()
-        
-        -- if we fired our alien to the left or it's almost done rolling, respawn
-        if xPos < 0 or (math.abs(xVel) + math.abs(yVel) < 1.5) then
-            self.launchMarker.alien.body:destroy()
+        local allPlayersDead = true
+        local removedPlayers = {}
+
+        for i = 1, #self.launchMarker.aliens do
+            local xPos, yPos = self.launchMarker.aliens[i].body:getPosition()
+            local xVel, yVel = self.launchMarker.aliens[i].body:getLinearVelocity()
+
+            -- if we fired our alien to the left or it's almost done rolling, respawn
+            if xPos < 0 or (math.abs(xVel) + math.abs(yVel) < 1.5) then
+                table.insert(self.destroyedBodies, self.launchMarker.aliens[i].body)
+            else
+                allPlayersDead = false
+            end
+        end
+
+        if allPlayersDead then
             self.launchMarker = AlienLaunchMarker(self.world)
 
             -- re-initialize level if we have no more aliens
@@ -189,7 +204,6 @@ function Level:update(dt)
 end
 
 function Level:render()
-    
     -- render ground tiles across full scrollable width of the screen
     for x = -VIRTUAL_WIDTH, VIRTUAL_WIDTH * 2, 35 do
         love.graphics.draw(gTextures['tiles'], gFrames['tiles'][12], x, VIRTUAL_HEIGHT - 35)
