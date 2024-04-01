@@ -53,7 +53,7 @@ function AlienLaunchMarker:update(dt)
 
             -- make the alien pretty bouncy
             self.alien.fixture:setRestitution(0.4)
-            self.alien.body:setAngularDamping(1)
+            self.alien.body:setAngularDamping(1.4)
 
             -- we're no longer aiming
             self.aiming = false
